@@ -18,6 +18,8 @@ export default function Dashbord() {
     const [userData, setUserData] = useState<UserLoginData | null>(null);
     const [loading, setLoading] = useState(true);
     const [absenKeluar, setAbsenKeluar] = useState(false);
+    const [modalPresensi, setModalPresensi] = useState(false);
+    const [loadingPresensi, setLoadingPresensi] = useState(false);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -49,25 +51,28 @@ export default function Dashbord() {
         }
     };
 
-    const hadlePresensi = async () => {
+    const handlePresensi = async (status: 'Hadir' | 'Pulang' | 'Izin') => {
+        setLoadingPresensi(true);
         try {
             const now = new Date();
-            const tanggal = now.toISOString().slice(0, 10); // YYYY-MM-DD
-            const jam = now.toTimeString().slice(0, 8); // HH:mm:ss
-            const status = absenKeluar ? 'Pulang' : 'Hadir';
-
-            const payload = {
-                id_pegawai: userData?.pegawai?.id_pegawai,
+            const tanggal = now.toISOString().slice(0, 10);
+            const jam = now.toTimeString().slice(0, 8);
+            const payload: any = {
+                id_pegawai: userData?.pegawai?.id,
                 status,
                 tanggal,
-                jam_masuk: status === 'Hadir' ? jam : null,
-                jam_keluar: status === 'Pulang' ? jam : null,
             };
+            if (status === 'Hadir') payload.jam_masuk = jam;
+            if (status === 'Pulang') payload.jam_keluar = jam;
+            if (status === 'Izin') payload.keterangan_izin = 'Izin';
 
-            await axiosInstance.post('api/presensi', payload);
-            Alert.alert("Sukses", `Presensi ${status} berhasil!`);
+            await axiosInstance.post('/api/presensi', payload);
+            Alert.alert('Sukses', `Presensi ${status} berhasil!`);
+            setModalPresensi(false);
         } catch (error: any) {
-            Alert.alert("Gagal Presensi", error?.message || String(error));
+            Alert.alert('Gagal', error?.message || 'Gagal presensi');
+        } finally {
+            setLoadingPresensi(false);
         }
     };
 
@@ -101,7 +106,7 @@ export default function Dashbord() {
                 </View>
             </View>
 
-            <Modal  
+            <Modal
                 transparent={true}
                 visible={modalVisible}
                 onRequestClose={() => setModalVisible(false)}
@@ -206,28 +211,64 @@ export default function Dashbord() {
                     </View>
 
                     <TouchableOpacity
-                        style={[
-                            styles.startButton,
-                            { backgroundColor: absenKeluar ? '#FFA500' : '#088904' }
-                        ]}
-                        onPress={() => {
-                            hadlePresensi();
-                            setAbsenKeluar(prev => !prev);
-                        }}
+                        style={styles.startButton}
+                        onPress={() => setModalPresensi(true)}
                     >
-                        <Text style={styles.startButtonText}>
-                            {absenKeluar ? 'Absensi keluar' : 'Absensi'}
-                        </Text>
-                        <Ionicons
-                            name={absenKeluar ? 'exit' : 'alarm'}
-                            size={20}
-                            color="#fff"
-                        />
+                        <Text style={styles.startButtonText}>Presensi</Text>
+                        <Ionicons name="alarm" size={20} color="#fff" />
                     </TouchableOpacity>
                 </View>
 
                 {/* Add more schedule cards here */}
             </ScrollView>
+
+            <Modal
+                transparent
+                visible={modalPresensi}
+                animationType="slide"
+                onRequestClose={() => setModalPresensi(false)}
+            >
+                <View style={{
+                    flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)'
+                }}>
+                    <View style={{
+                        backgroundColor: 'white', borderRadius: 12, padding: 24, width: '80%', alignItems: 'center', position: 'relative'
+                    }}>
+                        <TouchableOpacity
+                            onPress={() => setModalPresensi(false)}
+                            style={{
+                                position: 'absolute',
+                                top: 10,
+                                right: 10,
+                            }}
+                        >
+                            <Ionicons name="close" size={24} color="#333" />
+                        </TouchableOpacity>
+                        <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 16 }}>Pilih Jenis Presensi</Text>
+                        <TouchableOpacity
+                            style={[styles.startButton, { backgroundColor: '#088904', marginBottom: 12 }]}
+                            disabled={loadingPresensi}
+                            onPress={() => handlePresensi('Hadir')}
+                        >
+                            <Text style={styles.startButtonText}>Presensi Masuk</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.startButton, { backgroundColor: '#1e40af', marginBottom: 12 }]}
+                            disabled={loadingPresensi}
+                            onPress={() => handlePresensi('Pulang')}
+                        >
+                            <Text style={styles.startButtonText}>Presensi Pulang</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.startButton, { backgroundColor: '#b45309' }]}
+                            disabled={loadingPresensi}
+                            onPress={() => handlePresensi('Izin')}
+                        >
+                            <Text style={styles.startButtonText}>Izin</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }

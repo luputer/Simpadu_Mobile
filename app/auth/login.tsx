@@ -120,7 +120,7 @@ export default function LoginScreen() {
                     </TouchableOpacity>
 
                     {/* Footer */}
-                    <Text style={styles.footer}>2023 SIMPADU - Politeknik Negeri Banjarmasin</Text>
+                    <Text style={styles.footer}>2025 SIMPADU - Politeknik Negeri Banjarmasin</Text>
                 </View>
             </ImageBackground>
             <Toast />

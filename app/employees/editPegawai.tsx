@@ -21,8 +21,8 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Skeleton Loader Component
-const SkeletonLoader = ({ width = 100, height = 20, style = s`bg-gray-300 rounded` }: { width?: number | string; height?: number; style?: string }) => (
-  <View style={[{ width, height }, s`bg-gray-300 rounded`, style]} />
+const SkeletonLoader = ({ width = 100, height = 20, style = {} }: { width?: number | string; height?: number; style?: object }) => (
+  <View style={[{ width, height, backgroundColor: '#e0e0e0', borderRadius: 4 }, style]} />
 );
 
 export default function PegawaiScreen() {
@@ -325,11 +325,11 @@ export default function PegawaiScreen() {
           s`py-4`
         ]}
       >
-        <SkeletonLoader width={30} height={30} style={s`rounded-full ml-4`} />
-        <SkeletonLoader width={120} height={20} style={s`ml-4`} />
-        <SkeletonLoader width={100} height={20} style={s`ml-4`} />
-        <SkeletonLoader width={140} height={20} style={s`ml-4`} />
-        <SkeletonLoader width={60} height={20} style={s`ml-4`} />
+        <SkeletonLoader width={30} height={30} style={{ borderRadius: 15, marginLeft: 16 }} />
+        <SkeletonLoader width={120} height={20} style={{ marginLeft: 16 }} />
+        <SkeletonLoader width={100} height={20} style={{ marginLeft: 16 }} />
+        <SkeletonLoader width={140} height={20} style={{ marginLeft: 16 }} />
+        <SkeletonLoader width={60} height={20} style={{ marginLeft: 16 }} />
       </View>
     ));
   };

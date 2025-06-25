@@ -1,5 +1,3 @@
-import React from 'react';
-
 export interface PegawaiDetail {
     id: number;
     nip: string;
@@ -102,11 +100,4 @@ export interface LoginResponse {
 export interface LoginCredentials {
     email: string;
     password: string;
-}
-
-// Default export untuk memenuhi persyaratan route
-const AuthTypes = () => {
-    return null;
-};
-
-export default AuthTypes; 
+} 

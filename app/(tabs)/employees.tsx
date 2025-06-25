@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react'
 import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View, StyleSheet, Alert } from 'react-native'
 import { s } from "react-native-wind"
 import axiosInstance from '../lib/axios'; // Import axiosInstance
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Skeleton Loader Component
-const SkeletonLoader = ({ width = 100, height = 20, style = s`bg-gray-300 rounded` }: { width?: number | string; height?: number; style?: string }) => (
-    <View style={[{ width, height }, s`bg-gray-300 rounded`, style]} />
+const SkeletonLoader = ({ width = 100, height = 20, style = {} }: { width?: number | string; height?: number; style?: object }) => (
+    <View style={[{ width, height, backgroundColor: '#e0e0e0', borderRadius: 4 }, style]} />
 );
 
 export default function Employees() {
@@ -22,23 +23,55 @@ export default function Employees() {
     });
     const [totalPegawai, setTotalPegawai] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
     useEffect(() => {
-        const fetchTotalPegawai = async () => {
-            try {
-                setLoading(true);
-                const response = await axiosInstance.get('api/pegawai');
-                setTotalPegawai(response.data.length);
-            } catch (error) {
-                console.error("Error fetching total pegawai:", error);
-                setTotalPegawai(0); // Set to 0 on error
-            } finally {
-                setLoading(false);
+        (async () => {
+            const userDataStr = await AsyncStorage.getItem('userData');
+            if (userDataStr) {
+                try {
+                    const userData = JSON.parse(userDataStr);
+                    setIsAdmin(userData.level === 6 || userData.role === 6);
+                } catch {
+                    setIsAdmin(false);
+                }
+            } else {
+                setIsAdmin(false);
             }
-        };
-
-        fetchTotalPegawai();
+        })();
     }, []);
+
+    useEffect(() => {
+        if (isAdmin) {
+            const fetchTotalPegawai = async () => {
+                try {
+                    setLoading(true);
+                    const response = await axiosInstance.get('api/pegawai');
+                    setTotalPegawai(response.data.length);
+                } catch (error) {
+                    console.error("Error fetching total pegawai:", error);
+                    setTotalPegawai(0);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchTotalPegawai();
+        }
+    }, [isAdmin]);
+
+    if (isAdmin === false) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+                <Ionicons name="lock-closed-outline" size={64} color="#dc2626" style={{ marginBottom: 16 }} />
+                <Text style={{ color: '#dc2626', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
+                    Anda bukan admin, tidak bisa mengakses fitur pegawai
+                </Text>
+            </View>
+        );
+    }
+    if (isAdmin === null) {
+        return null;
+    }
 
     const handleInputChange = (field: string, value: string) => {
         setFormData(prev => ({
@@ -100,13 +133,13 @@ export default function Employees() {
                 {loading ? (
                     <View style={[s`mb-3 p-4 rounded-xl flex-row items-center justify-between`, { backgroundColor: '#E8F5E9' }]}>
                         <View style={s`flex-row items-center`}>
-                            <SkeletonLoader width={48} height={48} style={s`rounded-full mr-4`} />
+                            <SkeletonLoader width={48} height={48} style={{ borderRadius: 24, marginRight: 16 }} />
                             <View>
-                                <SkeletonLoader width={80} height={28} style={s`mb-1`} />
+                                <SkeletonLoader width={80} height={28} style={{ marginBottom: 4 }} />
                                 <SkeletonLoader width={120} height={18} />
                             </View>
                         </View>
-                        <SkeletonLoader width={28} height={28} style={s`rounded-full`} />
+                        <SkeletonLoader width={28} height={28} style={{ borderRadius: 14 }} />
                     </View>
                 ) : (
                     <CardTotalPegawai total={totalPegawai} onPress={() => router.push('/employees/editPegawai')} />

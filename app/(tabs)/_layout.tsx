@@ -18,24 +18,24 @@ export default function TabLayout() {
                 fontSize: 12
             }
         }}>
-            <Tabs.Screen name="dashbord" 
+            <Tabs.Screen name="dashbord"
                 options={{
                     title: 'Dashboard',
-                    tabBarIcon: ({color, size}) => 
+                    tabBarIcon: ({ color, size }) =>
                         <Ionicons name="home-outline" size={size} color={color} />
                 }}
             />
-            <Tabs.Screen name="employees" 
+            <Tabs.Screen name="employees"
                 options={{
                     title: 'Pegawai',
-                    tabBarIcon: ({color, size}) => 
+                    tabBarIcon: ({ color, size }) =>
                         <Ionicons name="document-text-outline" size={size} color={color} />
                 }}
             />
-            <Tabs.Screen name="presensi" 
+            <Tabs.Screen name="presensi"
                 options={{
                     title: 'Presensi',
-                    tabBarIcon: ({color, size}) => (
+                    tabBarIcon: ({ color, size }) => (
                         <View style={{
                             backgroundColor: '#088904',
                             borderRadius: 30,
@@ -51,17 +51,17 @@ export default function TabLayout() {
                     )
                 }}
             />
-            <Tabs.Screen name="notification" 
+            <Tabs.Screen name="notification"
                 options={{
                     title: 'Notification',
-                    tabBarIcon: ({color, size}) => 
+                    tabBarIcon: ({ color, size }) =>
                         <Ionicons name="notifications-outline" size={size} color={color} />
                 }}
             />
-            <Tabs.Screen name="account" 
+            <Tabs.Screen name="account"
                 options={{
                     title: 'Account',
-                    tabBarIcon: ({color, size}) => 
+                    tabBarIcon: ({ color, size }) =>
                         <Ionicons name="person-outline" size={size} color={color} />
                 }}
             />
