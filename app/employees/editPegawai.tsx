@@ -18,6 +18,7 @@ import axiosInstance from '../lib/axios';
 import { Pegawai, PegawaiEditData } from '../types/pegawai.types';
 import PegawaiForm from '../components/PegawaiForm';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Skeleton Loader Component
 const SkeletonLoader = ({ width = 100, height = 20, style = s`bg-gray-300 rounded` }: { width?: number | string; height?: number; style?: string }) => (
@@ -165,9 +166,14 @@ export default function PegawaiScreen() {
       }
       setModalVisible(false);
       fetchPegawai();
-    } catch (error) {
+    } catch (error: any) {
+      // Ambil pesan error dari response backend jika ada
+      let message = 'Gagal menyimpan data pegawai.';
+      if (error.response && error.response.data && error.response.data.message) {
+        message = error.response.data.message;
+      }
+      Alert.alert('Error', message);
       console.error('Error saving pegawai:', error);
-      Alert.alert('Error', 'Gagal menyimpan data pegawai');
     } finally {
       setLoading(false);
     }

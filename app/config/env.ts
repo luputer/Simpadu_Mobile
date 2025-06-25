@@ -11,8 +11,8 @@ interface EnvConfig {
 const ENV: Record<Environment, EnvConfig> = {
     dev: {
         // API_URL: 'https://ti054d01.agussbn.my.id',
-        API_URL: 'http://localhost:4000/',
-        NGROK_URL: 'https://1ec0-2404-c0-4ca0-00-12ed-20fb.ngrok-free.app/'
+        API_URL: 'https://ti054d02.agussbn.my.id',
+        NGROK_URL: 'https://083e-2001-448a-60c0-7810-b863-c566-4cf8-8473.ngrok-free.app/ '
     },
     prod: {
         API_URL: 'https://ti054d01.agussbn.my.id/',

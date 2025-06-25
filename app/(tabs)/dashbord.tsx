@@ -5,6 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState, useEffect } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { UserLoginData } from '../types/auth.types';
+import { Try } from 'expo-router/build/views/Try';
+import axiosInstance from '../lib/axios';
 
 // Skeleton Loader Component
 const SkeletonLoader = ({ width = 100, height = 20, style = {} }: { width?: number | string; height?: number; style?: object }) => (
@@ -15,6 +17,7 @@ export default function Dashbord() {
     const [modalVisible, setModalVisible] = useState(false);
     const [userData, setUserData] = useState<UserLoginData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [absenKeluar, setAbsenKeluar] = useState(false);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -43,6 +46,28 @@ export default function Dashbord() {
         } catch (error) {
             Alert.alert("Error", "Failed to log out. Please try again.");
             console.error("Logout error:", error);
+        }
+    };
+
+    const hadlePresensi = async () => {
+        try {
+            const now = new Date();
+            const tanggal = now.toISOString().slice(0, 10); // YYYY-MM-DD
+            const jam = now.toTimeString().slice(0, 8); // HH:mm:ss
+            const status = absenKeluar ? 'Pulang' : 'Hadir';
+
+            const payload = {
+                id_pegawai: userData?.pegawai?.id_pegawai,
+                status,
+                tanggal,
+                jam_masuk: status === 'Hadir' ? jam : null,
+                jam_keluar: status === 'Pulang' ? jam : null,
+            };
+
+            await axiosInstance.post('api/presensi', payload);
+            Alert.alert("Sukses", `Presensi ${status} berhasil!`);
+        } catch (error: any) {
+            Alert.alert("Gagal Presensi", error?.message || String(error));
         }
     };
 
@@ -76,7 +101,7 @@ export default function Dashbord() {
                 </View>
             </View>
 
-            <Modal
+            <Modal  
                 transparent={true}
                 visible={modalVisible}
                 onRequestClose={() => setModalVisible(false)}
@@ -180,9 +205,24 @@ export default function Dashbord() {
                         </View>
                     </View>
 
-                    <TouchableOpacity style={styles.startButton}>
-                        <Text style={styles.startButtonText}>Absensi</Text>
-                        <Ionicons name="alarm" size={20} color="#fff" />
+                    <TouchableOpacity
+                        style={[
+                            styles.startButton,
+                            { backgroundColor: absenKeluar ? '#FFA500' : '#088904' }
+                        ]}
+                        onPress={() => {
+                            hadlePresensi();
+                            setAbsenKeluar(prev => !prev);
+                        }}
+                    >
+                        <Text style={styles.startButtonText}>
+                            {absenKeluar ? 'Absensi keluar' : 'Absensi'}
+                        </Text>
+                        <Ionicons
+                            name={absenKeluar ? 'exit' : 'alarm'}
+                            size={20}
+                            color="#fff"
+                        />
                     </TouchableOpacity>
                 </View>
 

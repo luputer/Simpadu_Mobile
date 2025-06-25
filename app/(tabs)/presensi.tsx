@@ -1,44 +1,117 @@
-import { Camera, CameraView } from "expo-camera";
 import React, { useEffect, useState } from "react";
-import { Button, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator } from "react-native";
+import axiosInstance from "../lib/axios";
 
-// QRScanner component for handling camera and QR code scanning
-export default function QRScanner(): JSX.Element {
-  const [hasPermission, setHasPermission] = useState(false);
-  const [cameraActive, setCameraActive] = useState(true);
+interface PresensiLog {
+  id: number;
+  tanggal: string;
+  status: string;
+  jam_masuk?: string;
+  jam_pulang?: string;
+  keterangan_izin?: string;
+}
+
+export default function Presensi() {
+  const [logMasuk, setLogMasuk] = useState<PresensiLog[]>([]);
+  const [logPulang, setLogPulang] = useState<PresensiLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
+    const fetchPresensi = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await axiosInstance.get("/api/presensi");
+        const data: PresensiLog[] = res.data;
+        setLogMasuk(data.filter(item => item.status === "Hadir" || item.status === "Izin"));
+        setLogPulang(data.filter(item => item.status === "Pulang"));
+      } catch (err: any) {
+        setError("Gagal memuat data presensi");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPresensi();
   }, []);
 
-  if (hasPermission === null) {
-    return <Text>Memeriksa izin kamera...</Text>;
-  }
-  if (hasPermission === false) {
-    return <Text>Akses kamera ditolak!</Text>;
-  }
-
   return (
-    <View style={styles.container}>
-      {cameraActive && (
-        <CameraView style={styles.camera} >
-          <View style={styles.overlay}>
-            <Text style={styles.text}>Arahkan kamera ke QR Code</Text>
+    <ScrollView style={styles.bg}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Data Presensi</Text>
+        <Text style={styles.subtitle}>Pendataan Presensi anda.</Text>
+      </View>
+
+      <Text style={styles.sectionMasuk}>Log Presensi Masuk</Text>
+      <View style={styles.tableContainer}>
+        <TablePresensi
+          data={logMasuk}
+          loading={loading}
+          error={error}
+          type="masuk"
+        />
+      </View>
+
+      <Text style={styles.sectionPulang}>Log Presensi Pulang</Text>
+      <View style={styles.tableContainer}>
+        <TablePresensi
+          data={logPulang}
+          loading={loading}
+          error={error}
+          type="pulang"
+        />
+      </View>
+    </ScrollView>
+  );
+}
+
+function TablePresensi({ data, loading, error, type }: { data: PresensiLog[]; loading: boolean; error: string | null; type: "masuk" | "pulang" }) {
+  return (
+    <View style={styles.table}>
+      <View style={styles.tableRowHeader}>
+        <Text style={styles.th}>No</Text>
+        <Text style={styles.th}>Tanggal</Text>
+        <Text style={styles.th}>Status</Text>
+        <Text style={styles.th}>{type === "masuk" ? "Jam Masuk" : "Jam Pulang"}</Text>
+        <Text style={styles.th}>Keterangan Izin</Text>
+      </View>
+      {loading ? (
+        <ActivityIndicator style={{ margin: 16 }} color="#088904" />
+      ) : error ? (
+        <Text style={styles.error}>{error}</Text>
+      ) : data.length === 0 ? (
+        <Text style={styles.empty}>No data available</Text>
+      ) : (
+        data.map((item, idx) => (
+          <View style={styles.tableRow} key={item.id}>
+            <Text style={styles.td}>{idx + 1}</Text>
+            <Text style={styles.td}>{item.tanggal}</Text>
+            <Text style={[styles.td, item.status === 'Hadir' ? styles.statusHadir : item.status === 'Izin' ? styles.statusIzin : styles.statusPulang]}>{item.status}</Text>
+            <Text style={styles.td}>{type === "masuk" ? (item.status === "Hadir" ? item.jam_masuk : "-") : item.jam_pulang || "-"}</Text>
+            <Text style={styles.td}>{item.status === "Izin" ? item.keterangan_izin || "-" : "-"}</Text>
           </View>
-        </CameraView>
+        ))
       )}
-      <Button title="Tutup Kamera" onPress={() => setCameraActive(false)} />
-      <Button title="buka kamera" onPress={() => setCameraActive(true)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center" },
-  camera: { flex: 1, width: "100%" },
-  overlay: { position: "absolute", top: 50, backgroundColor: "rgba(0,0,0,0.5)", padding: 10 },
-  text: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  bg: { flex: 1, backgroundColor: "#f5f5f5" },
+  header: { backgroundColor: '#088904', paddingTop: 36, paddingBottom: 24, paddingHorizontal: 16, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, marginBottom: 16 },
+  title: { color: "#fff", fontSize: 24, fontWeight: "bold", marginBottom: 4, textAlign: 'center' },
+  subtitle: { color: "#E8F5E9", fontSize: 16, marginBottom: 0, textAlign: 'center' },
+  sectionMasuk: { color: "#088904", fontWeight: "bold", fontSize: 18, marginTop: 16, marginBottom: 8, marginLeft: 8 },
+  sectionPulang: { color: "#088904", fontWeight: "bold", fontSize: 18, marginTop: 32, marginBottom: 8, marginLeft: 8 },
+  tableContainer: { backgroundColor: "#fff", borderRadius: 12, padding: 8, marginBottom: 16, marginHorizontal: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
+  table: {},
+  tableRowHeader: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#E8F5E9", paddingVertical: 8, backgroundColor: '#E8F5E9', borderTopLeftRadius: 8, borderTopRightRadius: 8 },
+  tableRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#f5f5f5", paddingVertical: 8 },
+  th: { flex: 1, color: "#088904", fontWeight: "bold", fontSize: 14, textAlign: "center" },
+  td: { flex: 1, color: "#333", fontSize: 14, textAlign: "center" },
+  error: { color: "#dc2626", textAlign: "center", margin: 12 },
+  empty: { color: "#888", textAlign: "center", margin: 12 },
+  statusHadir: { color: '#088904', fontWeight: 'bold' },
+  statusIzin: { color: '#FFA500', fontWeight: 'bold' },
+  statusPulang: { color: '#333', fontWeight: 'bold' },
 });
