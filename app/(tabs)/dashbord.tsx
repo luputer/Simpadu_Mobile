@@ -13,6 +13,22 @@ const SkeletonLoader = ({ width = 100, height = 20, style = {} }: { width?: numb
     <View style={[{ width, height, backgroundColor: '#e0e0e0', borderRadius: 4 }, style]} />
 );
 
+function formatTanggalWaktu(date: Date) {
+    const hari = [
+        "Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"
+    ];
+    const bulan = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+    const h = hari[date.getDay()];
+    const t = date.getDate();
+    const b = bulan[date.getMonth()];
+    const y = date.getFullYear();
+    const jam = date.toLocaleTimeString('id-ID', { hour12: false });
+    return `${h}, ${t} ${b} ${y} — ${jam}`;
+}
+
 export default function Dashbord() {
     const [modalVisible, setModalVisible] = useState(false);
     const [userData, setUserData] = useState<UserLoginData | null>(null);
@@ -20,6 +36,7 @@ export default function Dashbord() {
     const [absenKeluar, setAbsenKeluar] = useState(false);
     const [modalPresensi, setModalPresensi] = useState(false);
     const [loadingPresensi, setLoadingPresensi] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -40,6 +57,13 @@ export default function Dashbord() {
         fetchUserData();
     }, []);
 
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
     const handleLogout = async () => {
         try {
             await AsyncStorage.removeItem('userToken');
@@ -54,17 +78,32 @@ export default function Dashbord() {
     const handlePresensi = async (status: 'Hadir' | 'Pulang' | 'Izin') => {
         setLoadingPresensi(true);
         try {
+            if (!userData || !userData.id_pegawai) {
+                Alert.alert('Gagal', 'Data pegawai tidak ditemukan.');
+                setLoadingPresensi(false);
+                return;
+            }
             const now = new Date();
-            const tanggal = now.toISOString().slice(0, 10);
-            const jam = now.toTimeString().slice(0, 8);
-            const payload: any = {
-                id_pegawai: userData?.pegawai?.id,
+            const tanggal = now.toISOString().slice(0, 10); // "2025-06-26"
+            let payload: any = {
+                id_pegawai: userData.id_pegawai,
                 status,
                 tanggal,
             };
-            if (status === 'Hadir') payload.jam_masuk = jam;
-            if (status === 'Pulang') payload.jam_keluar = jam;
-            if (status === 'Izin') payload.keterangan_izin = 'Izin';
+
+            if (status === 'Hadir') {
+                payload.jam_masuk =  // format ISO
+                    payload.jam_keluar = null;
+                payload.keterangan_izin = null;
+            } else if (status === 'Pulang') {
+                payload.jam_masuk = null;
+                payload.jam_keluar = now.toISOString(); // format ISO
+                payload.keterangan_izin = null;
+            } else if (status === 'Izin') {
+                payload.jam_masuk = now.toISOString();
+                payload.jam_keluar = now.toISOString();
+                payload.keterangan_izin = 'Izin';
+            }
 
             await axiosInstance.post('/api/presensi', payload);
             Alert.alert('Sukses', `Presensi ${status} berhasil!`);
@@ -83,6 +122,15 @@ export default function Dashbord() {
                 <Text style={styles.headerTitle}>Jadwal Perkuliahan</Text>
             </View>
 
+            <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
+                <Text style={{ fontWeight: 'bold', color: '#888' }}>
+                    {formatTanggalWaktu(currentTime)}
+                </Text>
+                {/* <Text style={{ color: '#1976d2', fontWeight: 'bold', fontSize: 14 }}>
+                    Selamat Datang! {userData?.nama_lengkap || 'User'}
+                </Text> */}
+            </View>
+
             <View style={styles.profileCard}>
                 {loading ? (
                     <View style={styles.profileInfo}>
@@ -91,7 +139,7 @@ export default function Dashbord() {
                     </View>
                 ) : (
                     <View style={styles.profileInfo}>
-                        <Text style={styles.profileName}>{userData?.nama || 'Dosen 123'}</Text>
+                        <Text style={styles.profileName}>{userData?.nama_lengkap || 'Dosen 123'}</Text>
                         <Text style={styles.profileRole}>{userData?.pegawai?.simpeg_jabatan_struktural?.nama_jabatan_struktural || userData?.pegawai?.simpeg_jabatan_fungsional?.nama_jabatan_fungsional || 'Jabatan Tidak Diketahui'}</Text>
                     </View>
                 )}
@@ -302,7 +350,7 @@ const styles = StyleSheet.create({
     },
     profileName: {
         color: 'white',
-        fontSize: 24,
+        fontSize: 16,
         fontWeight: 'bold',
     },
     profileRole: {
