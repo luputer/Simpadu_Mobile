@@ -19,6 +19,7 @@ import { Pegawai, PegawaiEditData } from '../types/pegawai.types';
 import PegawaiForm from '../components/PegawaiForm';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Picker } from '@react-native-picker/picker'; // Add this import
 
 // Skeleton Loader Component
 const SkeletonLoader = ({ width = 100, height = 20, style = {} }: { width?: number | string; height?: number; style?: object }) => (
@@ -116,7 +117,7 @@ export default function PegawaiScreen() {
   const openAddModal = () => {
     setIsEditMode(false);
     setEditData({
-
+      role: 7, // default role
     });
     setAddModalVisible(true);
   };
@@ -139,7 +140,8 @@ export default function PegawaiScreen() {
       nidn: pegawai.nidn,
       nuptk: pegawai.nuptk,
       alamat: pegawai.alamat,
-      foto: pegawai.foto
+      foto: pegawai.foto,
+      role: pegawai.role ?? 7, // Add this line
     };
 
     setEditData(editData);
@@ -423,6 +425,54 @@ export default function PegawaiScreen() {
                   placeholder="Masukkan NIP"
                   keyboardType="numeric"
                 />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>NIDN</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editData?.nidn}
+                  onChangeText={(text) => setEditData({ ...editData, nidn: text })}
+                  placeholder="Masukkan NIDN"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>NUPTK</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editData?.nuptk}
+                  onChangeText={(text) => setEditData({ ...editData, nuptk: text })}
+                  placeholder="Masukkan NUPTK"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Alamat</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editData?.alamat}
+                  onChangeText={(text) => setEditData({ ...editData, alamat: text })}
+                  placeholder="Masukkan alamat"
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Role *</Text>
+                <View style={[styles.input, { padding: 0 }]}>
+                  <Picker
+                    selectedValue={editData?.role ?? 7}
+                    onValueChange={(itemValue) =>
+                      setEditData({ ...editData, role: itemValue })
+                    }
+                    style={{ height: 40 }}
+                  >
+                    <Picker.Item label="Admin Pegawai" value={6} />
+                    <Picker.Item label="Dosen" value={7} />
+                  </Picker>
+                </View>
               </View>
 
               <View style={styles.inputGroup}>

@@ -2,11 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { UserLoginData } from '../types/auth.types';
-import { Try } from 'expo-router/build/views/Try';
 import axiosInstance from '../lib/axios';
+import { UserLoginData } from '../types/auth.types';
 
 // Skeleton Loader Component
 const SkeletonLoader = ({ width = 100, height = 20, style = {} }: { width?: number | string; height?: number; style?: object }) => (
@@ -31,12 +30,16 @@ function formatTanggalWaktu(date: Date) {
 
 export default function Dashbord() {
     const [modalVisible, setModalVisible] = useState(false);
-    const [userData, setUserData] = useState<UserLoginData | null>(null);
+    const [userData, setUserData] = useState<UserLoginData | any>(null);
     const [loading, setLoading] = useState(true);
-    const [absenKeluar, setAbsenKeluar] = useState(false);
+    // const [absenKeluar, setAbsenKeluar] = useState(false);
     const [modalPresensi, setModalPresensi] = useState(false);
     const [loadingPresensi, setLoadingPresensi] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [jadwal, setJadwal] = useState([]);
+    const [loadingJadwal, setLoadingJadwal] = useState(true);
+    const [loadingMulai, setLoadingMulai] = useState({});
+    const [sudahDimulai, setSudahDimulai] = useState([]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -63,6 +66,26 @@ export default function Dashbord() {
         }, 1000);
         return () => clearInterval(timer);
     }, []);
+
+    useEffect(() => {
+        const fetchJadwal = async () => {
+            if (!userData?.id_pegawai) {
+                setJadwal([]);
+                return;
+            }
+            try {
+                setLoadingJadwal(true);
+                const res = await fetch(`https://ti054d02.agussbn.my.id/api/pegawai/proxy-jadwal/${userData.id_pegawai}`);
+                const data = await res.json();
+                setJadwal(data || []);
+            } catch {
+                setJadwal([]);
+            } finally {
+                setLoadingJadwal(false);
+            }
+        };
+        fetchJadwal();
+    }, [userData?.id_pegawai]);
 
     const handleLogout = async () => {
         try {
@@ -115,11 +138,35 @@ export default function Dashbord() {
         }
     };
 
+    const handleMulai = async (id_kelas_mk: any) => {
+        setLoadingMulai((prev) => ({ ...prev, [id_kelas_mk]: true }));
+        try {
+            const res = await fetch('https://ti054d02.agussbn.my.id/api/pegawai/proxy-buka', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id_pegawai: userData.id_pegawai,
+                    id_kelas_mk,
+                }),
+            });
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || 'Gagal memulai perkuliahan!');
+            }
+            Alert.alert('Sukses', 'Perkuliahan dimulai!');
+            setSudahDimulai((prev) => [...prev, id_kelas_mk]);
+        } catch (err) {
+            Alert.alert('Error', err.message || 'Gagal memulai perkuliahan!');
+        } finally {
+            setLoadingMulai((prev) => ({ ...prev, [id_kelas_mk]: false }));
+        }
+    };
+
     return (
         <View style={styles.container}>
             <StatusBar hidden={true} />
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Jadwal Perkuliahan</Text>
+                <Text style={styles.headerTitle}>Jadwal Mengajar</Text>
             </View>
 
             <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
@@ -193,43 +240,37 @@ export default function Dashbord() {
             </Modal>
 
             <ScrollView style={styles.content}>
-                <Text style={styles.sectionTitle}>Jadwal Kelas</Text>
-
-                {/* Class Schedule Cards */}
-                <View style={styles.scheduleCard}>
-                    <View style={styles.scheduleHeader}>
-                        <View style={styles.iconContainer}>
-                            <Ionicons name="school" size={24} color="#088904" />
+                <Text style={styles.sectionTitle}>Jadwal Mengajar</Text>
+                {loadingJadwal ? (
+                    <Text>Memuat jadwal...</Text>
+                ) : jadwal.length === 0 ? (
+                    <Text>Tidak ada jadwal ditemukan.</Text>
+                ) : (
+                    jadwal.map((item) => (
+                        <View key={item.id_kelas_mk} style={styles.scheduleCard}>
+                            <Text style={styles.courseTitle}>{item.nama_mk}</Text>
+                            <Text>Kelas: {item.nama_kelas}</Text>
+                            <TouchableOpacity
+                                style={[
+                                    styles.startButton,
+                                    sudahDimulai.includes(item.id_kelas_mk) && { opacity: 0.6 }
+                                ]}
+                                onPress={() => handleMulai(item.id_kelas_mk)}
+                                disabled={!!loadingMulai[item.id_kelas_mk] || sudahDimulai.includes(item.id_kelas_mk)}
+                            >
+                                <Text style={styles.startButtonText}>
+                                    {loadingMulai[item.id_kelas_mk]
+                                        ? 'Memulai...'
+                                        : sudahDimulai.includes(item.id_kelas_mk)
+                                            ? 'Mata kuliah sudah dimulai!'
+                                            : 'Mulai Perkuliahan'}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
-                        <View style={styles.scheduleInfo}>
-                            <Text style={styles.courseTitle}>Aktivitas Perkuliahan 1</Text>
-                            <Text style={styles.courseCode}>Matkul 1</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.scheduleDetails}>
-                        <View style={styles.detailItem}>
-                            <Ionicons name="location" size={20} color="#666" />
-                            <Text style={styles.detailText}>Ruang 1</Text>
-                        </View>
-                        <View style={styles.detailItem}>
-                            <Ionicons name="time" size={20} color="#666" />
-                            <Text style={styles.detailText}>08.00-10.00</Text>
-                        </View>
-                        <View style={styles.detailItem}>
-                            <Ionicons name="people" size={20} color="#666" />
-                            <Text style={styles.detailText}>Pertemuan 8 dari 16</Text>
-                        </View>
-                    </View>
-
-                    <TouchableOpacity style={styles.startButton}>
-                        <Text style={styles.startButtonText}>Mulai Perkuliahan</Text>
-                        <Ionicons name="arrow-forward" size={20} color="#fff" />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Add more schedule cards here */}
+                    ))
+                )}
             </ScrollView>
+
             <ScrollView style={styles.content}>
                 {/* Class Schedule Cards */}
                 <View style={styles.scheduleCard}>

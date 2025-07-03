@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Picker } from '@react-native-picker/picker'
 import { useRouter } from 'expo-router'
-import React, { useState, useEffect } from 'react'
-import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View, StyleSheet, Alert } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { s } from "react-native-wind"
 import axiosInstance from '../lib/axios'; // Import axiosInstance
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Skeleton Loader Component
 const SkeletonLoader = ({ width = 100, height = 20, style = {} }: { width?: number | string; height?: number; style?: object }) => (
@@ -19,7 +20,8 @@ export default function Employees() {
         nip: '',
         nidn: '',
         nuptk: '',
-        alamat: ''
+        alamat: '',
+        role: 7 // default Dosen
     });
     const [totalPegawai, setTotalPegawai] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -73,7 +75,7 @@ export default function Employees() {
         return null;
     }
 
-    const handleInputChange = (field: string, value: string) => {
+    const handleInputChange = (field: string, value: string | number) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
@@ -94,7 +96,8 @@ export default function Employees() {
                 nip: '',
                 nidn: '',
                 nuptk: '',
-                alamat: ''
+                alamat: '',
+                role: 7 // default Dosen
             });
             // fetchTotalPegawai();
         } catch (error: any) {
@@ -228,7 +231,19 @@ export default function Employees() {
                                     numberOfLines={4}
                                 />
                             </View>
-
+                            <View style={s`mb-4`}>
+                                <Text style={s`mb-2`}>Role</Text>
+                                <View style={s`border border-gray-300 rounded-lg`}>
+                                    <Picker
+                                        selectedValue={formData.role}
+                                        onValueChange={value => handleInputChange('role', value)}
+                                        style={s`p-2`}
+                                    >
+                                        <Picker.Item label="Admin Pegawai" value={6} />
+                                        <Picker.Item label="Dosen" value={7} />
+                                    </Picker>
+                                </View>
+                            </View>
                             <TouchableOpacity
                                 onPress={handleSubmit}
                                 style={[s`py-3 rounded-lg items-center`, { backgroundColor: '#088904' }]}>
